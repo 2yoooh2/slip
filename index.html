@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSG 영수증 PDF 추출기</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="page">
+
+  <header class="app-header">
+    <h1>SSG 영수증 PDF 추출기</h1>
+    <p class="app-desc">SSG 영수증 PDF를 업로드하면 제품명·구매금액·수량을 자동으로 추출합니다.</p>
+  </header>
+
+  <section class="upload-section">
+    <div id="dropZone" class="drop-zone">
+      <input type="file" id="fileInput" accept="application/pdf" hidden>
+      <div class="drop-zone-content">
+        <p class="drop-zone-title">PDF 파일을 이곳에 끌어다 놓거나</p>
+        <button type="button" id="fileSelectBtn" class="btn btn-primary">파일 선택</button>
+        <p id="fileNameDisplay" class="file-name"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="guide-banner">
+    <p>Excel의 C열 시작 셀을 선택한 후 붙여넣으세요.<br>
+    제품명은 C열, 구매금액은 E열, 수량은 G열에 입력됩니다.</p>
+  </section>
+
+  <section id="resultSection" class="result-section">
+
+    <div class="result-toolbar">
+      <div class="result-count">추출된 상품: <strong id="itemCount">0</strong>개</div>
+      <div class="result-actions">
+        <button type="button" id="copyAllBtn" class="btn btn-primary">전체 상품 복사</button>
+        <button type="button" id="resetBtn" class="btn btn-outline">초기화</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table id="resultTable" class="result-table">
+        <thead>
+          <tr>
+            <th class="col-name">제품명</th>
+            <th class="col-amount">구매금액</th>
+            <th class="col-qty">수량</th>
+            <th class="col-actions">작업</th>
+          </tr>
+        </thead>
+        <tbody id="resultTbody"></tbody>
+      </table>
+    </div>
+
+    <div id="emptyState" class="empty-state">
+      <p>PDF를 업로드하면 추출된 상품 목록이 여기에 표시됩니다.</p>
+    </div>
+
+  </section>
+
+  <div id="errorBanner" class="error-banner" hidden></div>
+
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="js/lib/pdf.min.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/script.js"></script>
+</body>
+</html>
