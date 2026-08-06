@@ -48,6 +48,15 @@ const SsgReceiptParser = (function () {
     return STOP_KEYWORDS.some(function (kw) { return t.includes(kw); });
   }
 
+  // '주문번호' 값(예: "2026-08-05-1C5547", 년-월-일-주문번호)에서 월.일만 뽑아 "08.05" 형식으로 변환
+  function extractOrderDate(items) {
+    for (let i = 0; i < items.length; i++) {
+      const m = items[i].text.trim().match(/^\d{4}-(\d{2})-(\d{2})-\w+$/);
+      if (m) return m[1] + '.' + m[2];
+    }
+    return '';
+  }
+
   // PDF 한 페이지의 items를 {text, x, y, col} 형태로 변환
   function toPositionedItems(textContent) {
     return textContent.items
@@ -159,7 +168,7 @@ const SsgReceiptParser = (function () {
   /**
    * PDF 파일(ArrayBuffer)을 받아 상품 목록을 반환한다.
    * @param {ArrayBuffer} arrayBuffer
-   * @returns {Promise<Array<{name:string, qty:number, amount:number}>>}
+   * @returns {Promise<Array<{date:string, name:string, qty:number, amount:number}>>}
    */
   async function parseReceiptPdf(arrayBuffer) {
     if (typeof pdfjsLib === 'undefined') {
@@ -182,7 +191,11 @@ const SsgReceiptParser = (function () {
       throw new Error('구매내역에서 상품 정보를 찾을 수 없습니다. SSG 영수증 PDF가 맞는지 확인해주세요.');
     }
 
-    return result.products;
+    const orderDate = extractOrderDate(allItems);
+
+    return result.products.map(function (product) {
+      return Object.assign({ date: orderDate }, product);
+    });
   }
 
   return {

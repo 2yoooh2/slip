@@ -20,6 +20,7 @@
   const resetBtn = document.getElementById('resetBtn');
 
   const errorBanner = document.getElementById('errorBanner');
+  const errorBannerText = document.getElementById('errorBannerText');
   const toast = document.getElementById('toast');
 
   let items = []; // { name, qty, amount }
@@ -28,23 +29,21 @@
   // ===== 유틸 =====
 
   function showError(message) {
-    errorBanner.textContent = message;
+    errorBannerText.textContent = message;
     errorBanner.hidden = false;
   }
 
   function clearError() {
     errorBanner.hidden = true;
-    errorBanner.textContent = '';
+    errorBannerText.textContent = '';
   }
 
   function showToast(message) {
     toast.textContent = message;
-    toast.hidden = false;
     toast.classList.add('show');
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(function () {
       toast.classList.remove('show');
-      toast.hidden = true;
     }, 1800);
   }
 
@@ -72,9 +71,9 @@
     }
   }
 
-  // 제품명 \t \t 구매금액 \t \t 수량
+  // 주문일자 \t 제품명 \t \t 구매금액 \t \t 수량
   function toRowText(item) {
-    return [item.name, '', item.amount, '', item.qty].join('\t');
+    return [item.date, item.name, '', item.amount, '', item.qty].join('\t');
   }
 
   // ===== 렌더링 =====
@@ -86,6 +85,7 @@
       const tr = document.createElement('tr');
       tr.dataset.index = String(index);
 
+      tr.appendChild(buildEditableCell('date', item.date, 'cell-date'));
       tr.appendChild(buildEditableCell('name', item.name, 'cell-name'));
       tr.appendChild(buildEditableCell('amount', item.amount, 'cell-amount'));
       tr.appendChild(buildEditableCell('qty', item.qty, 'cell-qty'));
@@ -131,7 +131,9 @@
     input.value = String(value);
     input.addEventListener('change', function () {
       const index = Number(td.parentElement.dataset.index);
-      if (field === 'name') {
+      if (field === 'date') {
+        items[index].date = input.value;
+      } else if (field === 'name') {
         items[index].name = input.value;
       } else if (field === 'amount') {
         items[index].amount = input.value;
@@ -145,27 +147,42 @@
 
   // ===== PDF 처리 =====
 
-  async function handleFile(file) {
+  async function handleFiles(fileList) {
     clearError();
 
-    if (!file) return;
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+    const files = Array.from(fileList || []);
+    if (files.length === 0) return;
+
+    const invalidFile = files.find(function (f) {
+      return f.type !== 'application/pdf' && !f.name.toLowerCase().endsWith('.pdf');
+    });
+    if (invalidFile) {
       showError('PDF 파일만 업로드할 수 있습니다.');
       return;
     }
 
-    fileNameDisplay.textContent = file.name;
+    fileNameDisplay.textContent = files.length === 1
+      ? files[0].name
+      : files.length + '개 파일: ' + files.map(function (f) { return f.name; }).join(', ');
+
     items = [];
     render();
 
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const parsed = await SsgReceiptParser.parseReceiptPdf(arrayBuffer);
-      items = parsed;
-      render();
-    } catch (err) {
-      console.error(err);
-      showError(err && err.message ? err.message : 'PDF를 처리하는 중 오류가 발생했습니다.');
+    const errors = [];
+    for (const file of files) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const parsed = await SsgReceiptParser.parseReceiptPdf(arrayBuffer);
+        items = items.concat(parsed);
+      } catch (err) {
+        console.error(err);
+        errors.push(file.name + ': ' + (err && err.message ? err.message : 'PDF를 처리하는 중 오류가 발생했습니다.'));
+      }
+    }
+
+    render();
+    if (errors.length > 0) {
+      showError(errors.join(' / '));
     }
   }
 
@@ -184,8 +201,7 @@
   });
 
   fileInput.addEventListener('change', function () {
-    const file = fileInput.files && fileInput.files[0];
-    handleFile(file);
+    handleFiles(fileInput.files);
   });
 
   dropZone.addEventListener('dragover', function (e) {
@@ -200,8 +216,7 @@
   dropZone.addEventListener('drop', function (e) {
     e.preventDefault();
     dropZone.classList.remove('drag-over');
-    const file = e.dataTransfer.files && e.dataTransfer.files[0];
-    handleFile(file);
+    handleFiles(e.dataTransfer.files);
   });
 
   copyAllBtn.addEventListener('click', function () {
