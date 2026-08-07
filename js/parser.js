@@ -57,6 +57,31 @@ const SsgReceiptParser = (function () {
     return '';
   }
 
+  // '기타비용 내역'의 '총 배송비' 금액을 찾는다.
+  // 같은 줄에 "(부가세 273원 포함)" 같은 부연 설명이 뒤따르므로,
+  // 라벨 다음에 처음 나오는 "숫자,숫자 원"만 금액으로 취한다.
+  function extractShippingFee(items) {
+    for (let i = 0; i < items.length; i++) {
+      const label = items[i].text.trim().replace(/\s+/g, '');
+      if (label !== '총배송비') continue;
+
+      let digits = '';
+      for (let j = i + 1; j < items.length; j++) {
+        const t = items[j].text.trim();
+        if (/^[\d,]+$/.test(t)) {
+          digits += t.replace(/,/g, '');
+        } else if (t === '원') {
+          const amount = parseInt(digits, 10);
+          return isNaN(amount) ? null : amount;
+        } else if (digits !== '') {
+          break;
+        }
+      }
+      return null;
+    }
+    return null;
+  }
+
   // PDF 한 페이지의 items를 {text, x, y, col} 형태로 변환
   function toPositionedItems(textContent) {
     return textContent.items
@@ -193,7 +218,13 @@ const SsgReceiptParser = (function () {
 
     const orderDate = extractOrderDate(allItems);
 
-    return result.products.map(function (product) {
+    const products = result.products.slice();
+    const shippingFee = extractShippingFee(allItems);
+    if (shippingFee !== null) {
+      products.push({ name: '배송비', qty: 1, amount: shippingFee });
+    }
+
+    return products.map(function (product) {
       return Object.assign({ date: orderDate }, product);
     });
   }
