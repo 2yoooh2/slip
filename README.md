@@ -2,7 +2,7 @@
 
 SSG 영수증 PDF를 업로드하면 **주문일자 · 제품명 · 구매금액 · 수량**을 자동으로 추출해서 Excel에 바로 붙여넣을 수 있게 해주는 정적 웹페이지입니다.
 
-**바로 사용하기:** https://2yoooh2.github.io/ssg-receipt-parser/
+**바로 사용하기:** https://2yoooh2.github.io/slip/
 
 서버나 빌드 과정 없이 `index.html`을 브라우저로 열기만 하면 동작합니다.
 
